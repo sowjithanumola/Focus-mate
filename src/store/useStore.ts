@@ -1,0 +1,347 @@
+import { create } from 'zustand';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
+
+export type Task = {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  subject_id?: string;
+  is_completed: boolean;
+  due_date?: string;
+  created_at: string;
+};
+
+export type Subject = {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  created_at: string;
+};
+
+export type TimetableEntry = {
+  id: string;
+  user_id: string;
+  subject_id: string;
+  day_of_week: number; // 0-6 (Sunday-Saturday)
+  start_time: string; // HH:mm
+  end_time: string; // HH:mm
+};
+
+export type StudySession = {
+  id: string;
+  user_id: string;
+  subject_id?: string;
+  duration_minutes: number;
+  notes?: string;
+  created_at: string;
+};
+
+type State = {
+  user: any | null;
+  tasks: Task[];
+  subjects: Subject[];
+  timetable: TimetableEntry[];
+  sessions: StudySession[];
+  isLoading: boolean;
+  streak: number;
+  dailyGoalMinutes: number;
+  
+  fetchData: () => Promise<void>;
+  addTask: (task: Partial<Task>) => Promise<void>;
+  updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  
+  addSubject: (subject: Partial<Subject>) => Promise<void>;
+  deleteSubject: (id: string) => Promise<void>;
+  
+  addTimetableEntry: (entry: Partial<TimetableEntry>) => Promise<void>;
+  deleteTimetableEntry: (id: string) => Promise<void>;
+  
+  addStudySession: (session: Partial<StudySession>) => Promise<void>;
+};
+
+const saveLocalData = (state: Partial<State>) => {
+  if (!isSupabaseConfigured) {
+    const current = localStorage.getItem('focusmate_data');
+    const parsed = current ? JSON.parse(current) : {};
+    localStorage.setItem('focusmate_data', JSON.stringify({ ...parsed, ...state }));
+  }
+};
+
+const calculateStreak = (sessions: StudySession[]) => {
+  let currentStreak = 0;
+  if (sessions && sessions.length > 0) {
+    const uniqueDates = [...new Set(sessions.map(s => new Date(s.created_at).toDateString()))];
+    const today = new Date().toDateString();
+    const yesterday = new Date(Date.now() - 86400000).toDateString();
+    
+    if (uniqueDates.includes(today) || uniqueDates.includes(yesterday)) {
+      currentStreak = 1;
+      let checkDate = new Date(uniqueDates.includes(today) ? Date.now() : Date.now() - 86400000);
+      
+      for (let i = 1; i < uniqueDates.length; i++) {
+        checkDate = new Date(checkDate.getTime() - 86400000);
+        if (uniqueDates.includes(checkDate.toDateString())) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
+  return currentStreak;
+};
+
+export const useStore = create<State>((set, get) => ({
+  user: null,
+  tasks: [],
+  subjects: [],
+  timetable: [],
+  sessions: [],
+  isLoading: false,
+  streak: 0,
+  dailyGoalMinutes: 120, // 2 hours default
+
+  fetchData: async () => {
+    if (!isSupabaseConfigured || !supabase) {
+      // Load from local storage for demo mode
+      const localData = localStorage.getItem('focusmate_data');
+      if (localData) {
+        const parsed = JSON.parse(localData);
+        const streak = calculateStreak(parsed.sessions || []);
+        set({ ...parsed, streak, isLoading: false });
+      } else {
+        set({ isLoading: false });
+      }
+      return;
+    }
+    
+    set({ isLoading: true });
+    
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      set({ user: null, isLoading: false });
+      return;
+    }
+
+    const [
+      { data: tasks },
+      { data: subjects },
+      { data: timetable },
+      { data: sessions }
+    ] = await Promise.all([
+      supabase.from('tasks').select('*').order('created_at', { ascending: false }),
+      supabase.from('subjects').select('*').order('name'),
+      supabase.from('timetable').select('*'),
+      supabase.from('study_sessions').select('*').order('created_at', { ascending: false })
+    ]);
+
+    const currentStreak = calculateStreak(sessions || []);
+
+    set({
+      user,
+      tasks: tasks || [],
+      subjects: subjects || [],
+      timetable: timetable || [],
+      sessions: sessions || [],
+      streak: currentStreak,
+      isLoading: false
+    });
+  },
+
+  addTask: async (task) => {
+    if (!supabase) {
+      const newTask = { ...task, id: Date.now().toString(), created_at: new Date().toISOString() } as Task;
+      set(state => {
+        const newState = { tasks: [newTask, ...state.tasks] };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('tasks')
+      .insert([{ ...task, user_id: user.id }])
+      .select()
+      .single();
+
+    if (!error && data) {
+      set(state => ({ tasks: [data, ...state.tasks] }));
+    }
+  },
+
+  updateTask: async (id, updates) => {
+    if (!supabase) {
+      set(state => {
+        const newState = {
+          tasks: state.tasks.map(t => t.id === id ? { ...t, ...updates } : t)
+        };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { error } = await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('id', id);
+
+    if (!error) {
+      set(state => ({
+        tasks: state.tasks.map(t => t.id === id ? { ...t, ...updates } : t)
+      }));
+    }
+  },
+
+  deleteTask: async (id) => {
+    if (!supabase) {
+      set(state => {
+        const newState = {
+          tasks: state.tasks.filter(t => t.id !== id)
+        };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { error } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      set(state => ({
+        tasks: state.tasks.filter(t => t.id !== id)
+      }));
+    }
+  },
+
+  addSubject: async (subject) => {
+    if (!supabase) {
+      const newSubject = { ...subject, id: Date.now().toString(), created_at: new Date().toISOString() } as Subject;
+      set(state => {
+        const newState = { subjects: [...state.subjects, newSubject].sort((a, b) => a.name.localeCompare(b.name)) };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('subjects')
+      .insert([{ ...subject, user_id: user.id }])
+      .select()
+      .single();
+
+    if (!error && data) {
+      set(state => ({ subjects: [...state.subjects, data].sort((a, b) => a.name.localeCompare(b.name)) }));
+    }
+  },
+
+  deleteSubject: async (id) => {
+    if (!supabase) {
+      set(state => {
+        const newState = {
+          subjects: state.subjects.filter(s => s.id !== id),
+          timetable: state.timetable.filter(t => t.subject_id !== id),
+          tasks: state.tasks.map(t => t.subject_id === id ? { ...t, subject_id: undefined } : t)
+        };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { error } = await supabase
+      .from('subjects')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      set(state => ({
+        subjects: state.subjects.filter(s => s.id !== id),
+        timetable: state.timetable.filter(t => t.subject_id !== id),
+        tasks: state.tasks.map(t => t.subject_id === id ? { ...t, subject_id: undefined } : t)
+      }));
+    }
+  },
+
+  addTimetableEntry: async (entry) => {
+    if (!supabase) {
+      const newEntry = { ...entry, id: Date.now().toString() } as TimetableEntry;
+      set(state => {
+        const newState = { timetable: [...state.timetable, newEntry] };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('timetable')
+      .insert([{ ...entry, user_id: user.id }])
+      .select()
+      .single();
+
+    if (!error && data) {
+      set(state => ({ timetable: [...state.timetable, data] }));
+    }
+  },
+
+  deleteTimetableEntry: async (id) => {
+    if (!supabase) {
+      set(state => {
+        const newState = {
+          timetable: state.timetable.filter(t => t.id !== id)
+        };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { error } = await supabase
+      .from('timetable')
+      .delete()
+      .eq('id', id);
+
+    if (!error) {
+      set(state => ({
+        timetable: state.timetable.filter(t => t.id !== id)
+      }));
+    }
+  },
+
+  addStudySession: async (session) => {
+    if (!supabase) {
+      const newSession = { ...session, id: Date.now().toString(), created_at: new Date().toISOString() } as StudySession;
+      set(state => {
+        const newState = { sessions: [newSession, ...state.sessions] };
+        saveLocalData(newState);
+        return newState;
+      });
+      get().fetchData(); // Refresh streak
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('study_sessions')
+      .insert([{ ...session, user_id: user.id }])
+      .select()
+      .single();
+
+    if (!error && data) {
+      set(state => ({ sessions: [data, ...state.sessions] }));
+      get().fetchData(); // Refresh streak
+    }
+  }
+}));
