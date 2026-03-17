@@ -33,13 +33,50 @@ export function Auth() {
     setLoading(true);
     setError('');
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      // In the AI Studio preview environment (which is an iframe), 
+      // we must use a popup for OAuth, otherwise Google blocks it with a 403 error.
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/`
+          skipBrowserRedirect: true, // Don't redirect the whole page
+          redirectTo: window.location.origin
         }
       });
+      
       if (error) throw error;
+      
+      // Open the OAuth URL in a popup window
+      if (data?.url) {
+        const width = 500;
+        const height = 600;
+        const left = window.screenX + (window.outerWidth - width) / 2;
+        const top = window.screenY + (window.outerHeight - height) / 2;
+        
+        const popup = window.open(
+          data.url,
+          'supabase-oauth',
+          `width=${width},height=${height},left=${left},top=${top}`
+        );
+        
+        if (!popup) {
+          throw new Error('Popup was blocked by your browser. Please allow popups for this site.');
+        }
+
+        // We need to listen for the auth state change to know when the popup succeeds
+        const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+          if (event === 'SIGNED_IN' && session) {
+            popup.close();
+            // The app will automatically re-render because of the auth listener in App.tsx
+          }
+        });
+
+        // Clean up the listener after 5 minutes just in case
+        setTimeout(() => {
+          authListener.subscription.unsubscribe();
+          setLoading(false);
+        }, 5 * 60 * 1000);
+
+      }
     } catch (err: any) {
       if (err.message === 'Failed to fetch') {
         setError('Network error: Failed to connect to Supabase. Please ensure your Supabase URL is correct and your project is active (not paused).');
