@@ -41,7 +41,11 @@ export function Auth() {
       });
       if (error) throw error;
     } catch (err: any) {
-      setError(err.message);
+      if (err.message === 'Failed to fetch') {
+        setError('Network error: Failed to connect to Supabase. Please ensure your Supabase URL is correct and your project is active (not paused).');
+      } else {
+        setError(err.message);
+      }
       setLoading(false);
     }
   };
@@ -63,7 +67,11 @@ export function Auth() {
         alert('Check your email for the confirmation link!');
       }
     } catch (err: any) {
-      setError(err.message);
+      if (err.message === 'Failed to fetch') {
+        setError('Network error: Failed to connect to Supabase. Please ensure your Supabase URL is correct and your project is active (not paused).');
+      } else {
+        setError(err.message);
+      }
     } finally {
       setLoading(false);
     }
