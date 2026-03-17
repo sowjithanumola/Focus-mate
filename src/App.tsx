@@ -9,6 +9,8 @@ import { Tasks } from './pages/Tasks';
 import { Subjects } from './pages/Subjects';
 import { Timetable } from './pages/Timetable';
 import { Analytics } from './pages/Analytics';
+import { Assistant } from './pages/Assistant';
+import { SqlEditor } from './pages/SqlEditor';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -62,6 +64,8 @@ export default function App() {
           <Route path="subjects" element={<Subjects />} />
           <Route path="timetable" element={<Timetable />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="assistant" element={<Assistant />} />
+          <Route path="sql-editor" element={<SqlEditor />} />
         </Route>
       </Routes>
     </BrowserRouter>

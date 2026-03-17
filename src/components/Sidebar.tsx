@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Timer, CheckSquare, Calendar, BarChart2, BookOpen, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Timer, CheckSquare, Calendar, BarChart2, BookOpen, Settings, LogOut, Bot, Database } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 
@@ -10,6 +10,8 @@ const navItems = [
   { icon: BookOpen, label: 'Subjects', path: '/subjects' },
   { icon: Calendar, label: 'Timetable', path: '/timetable' },
   { icon: BarChart2, label: 'Analytics', path: '/analytics' },
+  { icon: Bot, label: 'Study Assistant', path: '/assistant' },
+  { icon: Database, label: 'SQL Editor', path: '/sql-editor' },
 ];
 
 export function Sidebar() {
@@ -25,8 +27,8 @@ export function Sidebar() {
   return (
     <div className="w-64 h-screen bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 flex flex-col">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2">
-          <Timer className="w-6 h-6" />
+        <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-3">
+          <img src="/favicon.svg" alt="FocusMate Logo" className="w-8 h-8 drop-shadow-sm" />
           FocusMate
         </h1>
       </div>

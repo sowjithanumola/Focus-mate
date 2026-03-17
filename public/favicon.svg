@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#4338ca"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded Square Background -->
+  <rect width="120" height="120" rx="30" fill="url(#bg)" />
+  
+  <!-- Outer Focus Ring (Timer/Target) -->
+  <circle cx="60" cy="60" r="36" fill="none" stroke="white" stroke-width="8" stroke-dasharray="160 60" stroke-linecap="round" transform="rotate(-45 60 60)" />
+  
+  <!-- Inner Checkmark (Productivity) -->
+  <path d="M 44 62 L 55 73 L 78 48" fill="none" stroke="url(#accent)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

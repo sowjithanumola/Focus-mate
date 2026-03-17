@@ -4,7 +4,6 @@ import { Timer, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -36,14 +35,8 @@ export function Auth() {
     setError('');
     
     try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        alert('Check your email for the confirmation link!');
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -63,10 +56,10 @@ export function Auth() {
             <Timer className="w-8 h-8 text-indigo-600 dark:text-indigo-400" />
           </div>
           <h2 className="text-3xl font-bold text-zinc-900 dark:text-white">
-            {isLogin ? 'Welcome back' : 'Create an account'}
+            Welcome back
           </h2>
           <p className="text-zinc-500 mt-2">
-            {isLogin ? 'Enter your details to access your dashboard' : 'Start managing your study time effectively'}
+            Enter your details to access your dashboard
           </p>
         </div>
 
@@ -86,7 +79,7 @@ export function Auth() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all outline-none"
-              placeholder="you@example.com"
+              placeholder="you@gmail.com"
             />
           </div>
           <div>
@@ -106,18 +99,9 @@ export function Auth() {
             disabled={loading}
             className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Please wait...' : (isLogin ? 'Sign in' : 'Sign up')}
+            {loading ? 'Please wait...' : 'Log in'}
           </button>
         </form>
-
-        <div className="mt-8 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 transition-colors"
-          >
-            {isLogin ? "Don't have an account? Sign up" : "Already have an account? Sign in"}
-          </button>
-        </div>
       </motion.div>
     </div>
   );
