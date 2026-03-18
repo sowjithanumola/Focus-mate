@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import { format } from 'date-fns';
-import { CheckCircle2, Circle, Flame, Target, Clock, BookOpen } from 'lucide-react';
+import { CheckCircle2, Circle, Flame, Target, Clock, BookOpen, CheckSquare } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
+import { cn } from '../lib/utils';
 
 export function Dashboard() {
   const { tasks, sessions, streak, dailyGoalMinutes, subjects, timetable, updateTask } = useStore();
