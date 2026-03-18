@@ -120,23 +120,38 @@ export const useStore = create<State>((set, get) => ({
     
     set({ isLoading: true });
     
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    
+    console.log('fetchData -> session:', session);
+    console.log('fetchData -> user:', user, 'error:', userError);
+
     if (!user) {
       set({ user: null, isLoading: false });
       return;
     }
 
     const [
-      { data: tasks },
-      { data: subjects },
-      { data: timetable },
-      { data: sessions }
+      tasksResponse,
+      subjectsResponse,
+      timetableResponse,
+      sessionsResponse
     ] = await Promise.all([
       supabase.from('tasks').select('*').order('created_at', { ascending: false }),
       supabase.from('subjects').select('*').order('name'),
       supabase.from('timetable').select('*'),
       supabase.from('study_sessions').select('*').order('created_at', { ascending: false })
     ]);
+
+    if (tasksResponse.error) console.error('Tasks error:', tasksResponse.error);
+    if (subjectsResponse.error) console.error('Subjects error:', subjectsResponse.error);
+    if (timetableResponse.error) console.error('Timetable error:', timetableResponse.error);
+    if (sessionsResponse.error) console.error('Sessions error:', sessionsResponse.error);
+
+    const tasks = tasksResponse.data;
+    const subjects = subjectsResponse.data;
+    const timetable = timetableResponse.data;
+    const sessions = sessionsResponse.data;
 
     const currentStreak = calculateStreak(sessions || []);
 
@@ -169,6 +184,10 @@ export const useStore = create<State>((set, get) => ({
       .insert([{ ...task, user_id: user.id }])
       .select()
       .single();
+
+    if (error) {
+      console.error('Error adding task:', error);
+    }
 
     if (!error && data) {
       set(state => ({ tasks: [data, ...state.tasks] }));
@@ -240,6 +259,10 @@ export const useStore = create<State>((set, get) => ({
       .select()
       .single();
 
+    if (error) {
+      console.error('Error adding subject:', error);
+    }
+
     if (!error && data) {
       set(state => ({ subjects: [...state.subjects, data].sort((a, b) => a.name.localeCompare(b.name)) }));
     }
@@ -290,6 +313,10 @@ export const useStore = create<State>((set, get) => ({
       .insert([{ ...entry, user_id: user.id }])
       .select()
       .single();
+
+    if (error) {
+      console.error('Error adding timetable entry:', error);
+    }
 
     if (!error && data) {
       set(state => ({ timetable: [...state.timetable, data] }));

@@ -48,8 +48,12 @@ export function Auth() {
     
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        if (data.user) {
+          useStore.setState({ user: data.user });
+        }
+        await useStore.getState().fetchData();
         navigate('/');
       } else {
         const { error } = await supabase.auth.signUp({ 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { DndContext, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
-import { Download, Trash2, Calendar as CalendarIcon } from 'lucide-react';
+import { Download, Trash2, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { cn } from '../lib/utils';
@@ -12,6 +12,7 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
 export function Timetable() {
   const { subjects, timetable, addTimetableEntry, deleteTimetableEntry } = useStore();
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<{ day: number, hour: number } | null>(null);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -136,6 +137,7 @@ export function Timetable() {
                           entry={entry} 
                           subject={subject}
                           onDelete={() => entry && deleteTimetableEntry(entry.id)}
+                          onClick={() => setSelectedSlot({ day: jsDay, hour })}
                         />
                       );
                     })}
@@ -146,6 +148,46 @@ export function Timetable() {
           </div>
         </div>
       </div>
+
+      {selectedSlot && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 max-w-sm w-full shadow-xl">
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Select Subject</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
+              {subjects.length === 0 ? (
+                <p className="text-sm text-zinc-500">No subjects available. Add them in the Subjects tab.</p>
+              ) : (
+                subjects.map(subject => (
+                  <button
+                    key={subject.id}
+                    onClick={() => {
+                      const startTime = `${selectedSlot.hour.toString().padStart(2, '0')}:00`;
+                      const endTime = `${(selectedSlot.hour + 1).toString().padStart(2, '0')}:00`;
+                      addTimetableEntry({
+                        subject_id: subject.id,
+                        day_of_week: selectedSlot.day,
+                        start_time: startTime,
+                        end_time: endTime,
+                      });
+                      setSelectedSlot(null);
+                    }}
+                    className="w-full p-3 rounded-xl text-left text-sm font-medium text-white transition-opacity hover:opacity-90"
+                    style={{ backgroundColor: subject.color }}
+                  >
+                    {subject.name}
+                  </button>
+                ))
+              )}
+            </div>
+            <button
+              onClick={() => setSelectedSlot(null)}
+              className="mt-4 w-full py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </DndContext>
   );
 }
@@ -178,17 +220,24 @@ function DraggableSubject({ subject }: { subject: any }) {
   );
 }
 
-function DroppableSlot({ id, entry, subject, onDelete }: { id: string, entry: any, subject: any, onDelete: () => void }) {
+function DroppableSlot({ id, entry, subject, onDelete, onClick }: { id: string, entry: any, subject: any, onDelete: () => void, onClick: () => void }) {
   const { isOver, setNodeRef } = useDroppable({ id });
 
   return (
     <div
       ref={setNodeRef}
+      onClick={!entry ? onClick : undefined}
       className={cn(
         "min-h-[60px] p-1 border-r border-zinc-200 dark:border-zinc-800 last:border-0 transition-colors relative group",
-        isOver ? "bg-indigo-50 dark:bg-indigo-500/10" : "hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
+        isOver ? "bg-indigo-50 dark:bg-indigo-500/10" : "hover:bg-zinc-50 dark:hover:bg-zinc-800/30",
+        !entry && "cursor-pointer"
       )}
     >
+      {!entry && (
+        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Plus className="w-4 h-4 text-zinc-400" />
+        </div>
+      )}
       {entry && subject && (
         <div 
           className="w-full h-full rounded-lg p-2 text-xs font-bold text-white relative overflow-hidden flex flex-col justify-center"
