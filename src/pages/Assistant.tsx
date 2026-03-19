@@ -19,7 +19,7 @@ export function Assistant() {
     { 
       id: '1', 
       role: 'model', 
-      text: "Hi! I'm your FocusMate study assistant. I can help you understand complex topics, plan your study schedule, or just keep you motivated. What are we working on today?" 
+      text: "Hi! I'm your FocusMate study assistant, created by sowjith anumola. I can help you understand complex topics, plan your study schedule, or just keep you motivated. What are we working on today?" 
     }
   ]);
   const [input, setInput] = useState('');
@@ -33,7 +33,7 @@ export function Assistant() {
       chatRef.current = ai.chats.create({
         model: 'gemini-3-flash-preview',
         config: {
-          systemInstruction: "You are FocusMate, a helpful, encouraging personal study assistant. You help students understand concepts, manage their time, and stay productive. Keep your answers concise, structured, and formatted with markdown. Be friendly and motivating.",
+          systemInstruction: "You are FocusMate, a helpful, encouraging personal study assistant created by sowjith anumola. You help students understand concepts, manage their time, and stay productive. Keep your answers concise, structured, and formatted with markdown. Be friendly and motivating. If anyone asks who made you or created you, you must say you were created by sowjith anumola.",
         }
       });
     }
