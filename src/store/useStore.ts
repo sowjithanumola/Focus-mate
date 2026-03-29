@@ -57,6 +57,7 @@ type State = {
   deleteSubject: (id: string) => Promise<void>;
   
   addTimetableEntry: (entry: Partial<TimetableEntry>) => Promise<void>;
+  updateTimetableEntry: (id: string, updates: Partial<TimetableEntry>) => Promise<void>;
   deleteTimetableEntry: (id: string) => Promise<void>;
   
   addStudySession: (session: Partial<StudySession>) => Promise<void>;
@@ -320,6 +321,29 @@ export const useStore = create<State>((set, get) => ({
 
     if (!error && data) {
       set(state => ({ timetable: [...state.timetable, data] }));
+    }
+  },
+
+  updateTimetableEntry: async (id, updates) => {
+    if (!supabase) {
+      set(state => {
+        const newState = {
+          timetable: state.timetable.map(t => t.id === id ? { ...t, ...updates } : t)
+        };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { error } = await supabase
+      .from('timetable')
+      .update(updates)
+      .eq('id', id);
+
+    if (!error) {
+      set(state => ({
+        timetable: state.timetable.map(t => t.id === id ? { ...t, ...updates } : t)
+      }));
     }
   },
 

@@ -10,9 +10,9 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
 
 export function Timetable() {
-  const { subjects, timetable, addTimetableEntry, deleteTimetableEntry } = useStore();
+  const { subjects, timetable, addTimetableEntry, deleteTimetableEntry, updateTimetableEntry } = useStore();
   const [isExporting, setIsExporting] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{ day: number, hour: number } | null>(null);
+  const [activeEntry, setActiveEntry] = useState<{ day: number, hour: number, entry?: any } | null>(null);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -29,8 +29,7 @@ export function Timetable() {
       // Check if slot is already taken
       const existing = timetable.find(t => 
         t.day_of_week === day && 
-        t.start_time <= startTime && 
-        t.end_time > startTime
+        parseInt(t.start_time.split(':')[0]) === hour
       );
 
       if (!existing) {
@@ -137,7 +136,7 @@ export function Timetable() {
                           entry={entry} 
                           subject={subject}
                           onDelete={() => entry && deleteTimetableEntry(entry.id)}
-                          onClick={() => setSelectedSlot({ day: jsDay, hour })}
+                          onClick={() => setActiveEntry({ day: jsDay, hour, entry })}
                         />
                       );
                     })}
@@ -149,42 +148,87 @@ export function Timetable() {
         </div>
       </div>
 
-      {selectedSlot && (
+      {activeEntry && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 max-w-sm w-full shadow-xl">
-            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">Select Subject</h3>
-            <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-              {subjects.length === 0 ? (
-                <p className="text-sm text-zinc-500">No subjects available. Add them in the Subjects tab.</p>
-              ) : (
-                subjects.map(subject => (
-                  <button
-                    key={subject.id}
-                    onClick={() => {
-                      const startTime = `${selectedSlot.hour.toString().padStart(2, '0')}:00`;
-                      const endTime = `${(selectedSlot.hour + 1).toString().padStart(2, '0')}:00`;
-                      addTimetableEntry({
-                        subject_id: subject.id,
-                        day_of_week: selectedSlot.day,
-                        start_time: startTime,
-                        end_time: endTime,
-                      });
-                      setSelectedSlot(null);
-                    }}
-                    className="w-full p-3 rounded-xl text-left text-sm font-medium text-white transition-opacity hover:opacity-90"
-                    style={{ backgroundColor: subject.color }}
-                  >
-                    {subject.name}
-                  </button>
-                ))
+            <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-4">
+              {activeEntry.entry ? 'Edit Entry' : 'Select Subject'}
+            </h3>
+            <div className="space-y-4">
+              {activeEntry.entry && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-zinc-500">Start Time</label>
+                    <input 
+                      type="time" 
+                      defaultValue={activeEntry.entry.start_time}
+                      onChange={(e) => setActiveEntry(prev => prev ? {...prev, entry: {...prev.entry, start_time: e.target.value}} : null)}
+                      className="w-full p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-zinc-500">End Time</label>
+                    <input 
+                      type="time" 
+                      defaultValue={activeEntry.entry.end_time}
+                      onChange={(e) => setActiveEntry(prev => prev ? {...prev, entry: {...prev.entry, end_time: e.target.value}} : null)}
+                      className="w-full p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm"
+                    />
+                  </div>
+                </div>
               )}
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                {subjects.length === 0 ? (
+                  <p className="text-sm text-zinc-500">No subjects available. Add them in the Subjects tab.</p>
+                ) : (
+                  subjects.map(subject => (
+                    <button
+                      key={subject.id}
+                      onClick={() => setActiveEntry(prev => prev ? {...prev, entry: {...prev.entry, subject_id: subject.id}} : null)}
+                      className={cn(
+                        "w-full p-3 rounded-xl text-left text-sm font-medium text-white transition-opacity hover:opacity-90",
+                        (activeEntry.entry?.subject_id === subject.id || (!activeEntry.entry && subject.id === subjects[0]?.id)) && "ring-2 ring-indigo-500 ring-offset-2 dark:ring-offset-zinc-900"
+                      )}
+                      style={{ backgroundColor: subject.color }}
+                    >
+                      {subject.name}
+                    </button>
+                  ))
+                )}
+              </div>
             </div>
-            <button
-              onClick={() => setSelectedSlot(null)}
-              className="mt-4 w-full py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
-            >
-              Cancel
-            </button>
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => setActiveEntry(null)}
+                className="flex-1 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (activeEntry.entry) {
+                    updateTimetableEntry(activeEntry.entry.id, {
+                      subject_id: activeEntry.entry.subject_id || activeEntry.entry.subject_id,
+                      start_time: activeEntry.entry.start_time,
+                      end_time: activeEntry.entry.end_time,
+                    });
+                  } else {
+                    const startTime = `${activeEntry.hour.toString().padStart(2, '0')}:00`;
+                    const endTime = `${(activeEntry.hour + 1).toString().padStart(2, '0')}:00`;
+                    addTimetableEntry({
+                      subject_id: activeEntry.entry?.subject_id || subjects[0]?.id,
+                      day_of_week: activeEntry.day,
+                      start_time: startTime,
+                      end_time: endTime,
+                    });
+                  }
+                  setActiveEntry(null);
+                }}
+                className="flex-1 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -206,7 +250,6 @@ function DraggableSubject({ subject }: { subject: any }) {
   return (
     <div
       ref={setNodeRef}
-      style={style}
       {...listeners}
       {...attributes}
       className={cn(
