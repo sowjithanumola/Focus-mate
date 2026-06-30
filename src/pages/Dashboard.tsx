@@ -12,6 +12,9 @@ export function Dashboard() {
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
   
+  const currentHour = today.getHours();
+  const greeting = currentHour < 12 ? 'Good Morning!' : currentHour < 18 ? 'Good Afternoon!' : 'Good Evening!';
+  
   const todayTasks = tasks.filter(t => {
     if (!t.due_date) return false;
     return t.due_date.startsWith(todayStr);
@@ -30,7 +33,7 @@ export function Dashboard() {
     <div className="space-y-8">
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Good Morning!</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">{greeting}</h1>
           <p className="text-zinc-500 dark:text-zinc-400 mt-1">Here's your study overview for {format(today, 'EEEE, MMMM d')}</p>
         </div>
       </header>

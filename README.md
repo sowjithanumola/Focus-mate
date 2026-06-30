@@ -1,46 +1,20 @@
-# 🚀 Focus Mate
-
 <div align="center">
-# Focus Mate
-AI-Powered Smart Study Planner and Productivity Assistant
-<p align="center"> An intelligent study companion designed to help students organize tasks, manage schedules, improve focus, and maximize productivity using modern web technologies and AI-driven planning. </p> <p align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-</p>
-🌟 **Overview**
+# Run and deploy your AI Studio app
 
-Focus Mate is an intelligent productivity platform built to help students and learners manage their academic life more effectively. It combines smart scheduling, task management, focus enhancement, and AI-assisted recommendations into one seamless experience.
+This contains everything you need to run your app locally.
 
-Whether you're preparing for exams, organizing assignments, or trying to maintain consistent study habits, Focus Mate acts as your personal productivity companion.
+View your app in AI Studio: https://ai.studio/apps/76b20d3f-82e2-4dcf-bb34-75049d05c92a
 
-✨ **Key Features**
-| Feature | Description |
-| --- | --- |
-| 📅 Smart Study Planner | Automatically organizes study schedules |
-| ⏰ Focus Timer | Pomodoro-based productivity sessions |
-| 📊 Progress Tracking | Monitor learning progress |
-| 🎯 Goal Management | Set daily and weekly goals |
-| 📝 Task Organization | Manage assignments and tasks |
-| 🧠 AI Recommendations | Personalized study suggestions |
-| 🔔 Reminders | Smart notifications and alerts |
-| 🌙 Dark Mode | Comfortable viewing experience |
-| 📈 Analytics Dashboard | Productivity statistics |
-| 🔒 Secure Data Handling | User privacy protection |
+## Run Locally
 
-🎯 **Mission**
+**Prerequisites:**  Node.js
 
-Focus Mate aims to solve one of the biggest challenges students face:
 
-- Staying productive and managing time effectively.
-
-The platform is designed to transform scattered study habits into structured, efficient, and measurable learning experiences.
-
-📚 **Why Focus Mate?**
-
-Traditional to-do lists only record tasks.
-Focus Mate goes further by:
-- Prioritizing important work.
-- Encouraging healthy study habits.
-- Providing intelligent recommendations.
-- Tracking productivity patterns.
-- Helping maintain consistency.
-
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

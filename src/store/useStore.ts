@@ -47,6 +47,7 @@ type State = {
   isLoading: boolean;
   streak: number;
   dailyGoalMinutes: number;
+  searchTerm: string;
   
   fetchData: () => Promise<void>;
   addTask: (task: Partial<Task>) => Promise<void>;
@@ -61,6 +62,7 @@ type State = {
   deleteTimetableEntry: (id: string) => Promise<void>;
   
   addStudySession: (session: Partial<StudySession>) => Promise<void>;
+  setSearchTerm: (term: string) => void;
 };
 
 const saveLocalData = (state: Partial<State>) => {
@@ -72,24 +74,26 @@ const saveLocalData = (state: Partial<State>) => {
 };
 
 const calculateStreak = (sessions: StudySession[]) => {
-  let currentStreak = 0;
-  if (sessions && sessions.length > 0) {
-    const uniqueDates = [...new Set(sessions.map(s => new Date(s.created_at).toDateString()))];
-    const today = new Date().toDateString();
-    const yesterday = new Date(Date.now() - 86400000).toDateString();
+  if (!sessions || sessions.length === 0) return 0;
+  
+  const uniqueDates = Array.from(new Set(sessions.map(s => new Date(s.created_at).toISOString().split('T')[0])))
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
     
-    if (uniqueDates.includes(today) || uniqueDates.includes(yesterday)) {
-      currentStreak = 1;
-      let checkDate = new Date(uniqueDates.includes(today) ? Date.now() : Date.now() - 86400000);
-      
-      for (let i = 1; i < uniqueDates.length; i++) {
-        checkDate = new Date(checkDate.getTime() - 86400000);
-        if (uniqueDates.includes(checkDate.toDateString())) {
-          currentStreak++;
-        } else {
-          break;
-        }
-      }
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  
+  if (!uniqueDates.includes(today) && !uniqueDates.includes(yesterday)) return 0;
+  
+  let currentStreak = 0;
+  let checkDate = uniqueDates.includes(today) ? new Date(today) : new Date(yesterday);
+  
+  for (let i = 0; i < uniqueDates.length; i++) {
+    const dateStr = checkDate.toISOString().split('T')[0];
+    if (uniqueDates.includes(dateStr)) {
+      currentStreak++;
+      checkDate.setDate(checkDate.getDate() - 1);
+    } else {
+      break;
     }
   }
   return currentStreak;
@@ -104,6 +108,7 @@ export const useStore = create<State>((set, get) => ({
   isLoading: false,
   streak: 0,
   dailyGoalMinutes: 120, // 2 hours default
+  searchTerm: '',
 
   fetchData: async () => {
     if (!isSupabaseConfigured || !supabase) {
@@ -394,5 +399,7 @@ export const useStore = create<State>((set, get) => ({
       set(state => ({ sessions: [data, ...state.sessions] }));
       get().fetchData(); // Refresh streak
     }
-  }
+  },
+
+  setSearchTerm: (term) => set({ searchTerm: term })
 }));
