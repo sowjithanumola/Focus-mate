@@ -8,6 +8,7 @@ import { Timer } from './pages/Timer';
 import { Tasks } from './pages/Tasks';
 import { Subjects } from './pages/Subjects';
 import { Timetable } from './pages/Timetable';
+import { Notes } from './pages/Notes';
 import { Analytics } from './pages/Analytics';
 import { Assistant } from './pages/Assistant';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="tasks" element={<Tasks />} />
           <Route path="subjects" element={<Subjects />} />
           <Route path="timetable" element={<Timetable />} />
+          <Route path="notes" element={<Notes />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="assistant" element={<Assistant />} />
         </Route>

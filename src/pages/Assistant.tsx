@@ -15,17 +15,24 @@ type Message = {
 };
 
 export function Assistant() {
-  const [messages, setMessages] = useState<Message[]>([
-    { 
-      id: '1', 
-      role: 'model', 
-      text: "Hi! I'm your FocusMate study assistant, created by sowjith anumola. I can help you understand complex topics, plan your study schedule, or just keep you motivated. What are we working on today?" 
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('focusmate_assistant_chat');
+    return saved ? JSON.parse(saved) : [
+      { 
+        id: '1', 
+        role: 'model', 
+        text: "Hi! I'm your FocusMate study assistant, created by sowjith anumola. I can help you understand complex topics, plan your study schedule, or just keep you motivated. What are we working on today?" 
+      }
+    ];
+  });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatRef = useRef<any>(null);
+
+  useEffect(() => {
+    localStorage.setItem('focusmate_assistant_chat', JSON.stringify(messages));
+  }, [messages]);
 
   useEffect(() => {
     // Initialize the chat session

@@ -137,27 +137,27 @@ export const useStore = create<State>((set, get) => ({
       return;
     }
 
+    const fetchTable = async (table: string, orderColumn: string, ascending: boolean = true) => {
+      if (!supabase) return [];
+      const { data, error } = await supabase.from(table).select('*').order(orderColumn, { ascending });
+      if (error) {
+        console.error(`Error fetching ${table}:`, error);
+        return [];
+      }
+      return data;
+    };
+
     const [
-      tasksResponse,
-      subjectsResponse,
-      timetableResponse,
-      sessionsResponse
+      tasks,
+      subjects,
+      timetable,
+      sessions
     ] = await Promise.all([
-      supabase.from('tasks').select('*').order('created_at', { ascending: false }),
-      supabase.from('subjects').select('*').order('name'),
-      supabase.from('timetable').select('*'),
-      supabase.from('study_sessions').select('*').order('created_at', { ascending: false })
+      fetchTable('tasks', 'created_at', false),
+      fetchTable('subjects', 'name', true),
+      fetchTable('timetable', 'start_time', true),
+      fetchTable('study_sessions', 'created_at', false)
     ]);
-
-    if (tasksResponse.error) console.error('Tasks error:', tasksResponse.error);
-    if (subjectsResponse.error) console.error('Subjects error:', subjectsResponse.error);
-    if (timetableResponse.error) console.error('Timetable error:', timetableResponse.error);
-    if (sessionsResponse.error) console.error('Sessions error:', sessionsResponse.error);
-
-    const tasks = tasksResponse.data;
-    const subjects = subjectsResponse.data;
-    const timetable = timetableResponse.data;
-    const sessions = sessionsResponse.data;
 
     const currentStreak = calculateStreak(sessions || []);
 

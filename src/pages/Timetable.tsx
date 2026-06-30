@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { DndContext, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
-import { Download, Trash2, Calendar as CalendarIcon, Plus } from 'lucide-react';
-import { jsPDF } from 'jspdf';
-import html2canvas from 'html2canvas';
+import { Trash2, Calendar as CalendarIcon, Plus } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -11,51 +9,39 @@ const HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
 
 export function Timetable() {
   const { subjects, timetable, addTimetableEntry, deleteTimetableEntry, updateTimetableEntry } = useStore();
-  const [isExporting, setIsExporting] = useState(false);
   const [activeEntry, setActiveEntry] = useState<{ day: number, hour: number, entry?: any } | null>(null);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (over && active.data.current?.type === 'subject') {
-      const subjectId = active.id as string;
-      const [dayStr, hourStr] = (over.id as string).split('-');
-      const day = parseInt(dayStr);
-      const hour = parseInt(hourStr);
-      
-      const startTime = `${hour.toString().padStart(2, '0')}:00`;
-      const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
+    if (!over || active.data.current?.type !== 'subject') return;
 
-      // Check if slot is already taken
-      const existing = timetable.find(t => 
-        t.day_of_week === day && 
-        parseInt(t.start_time.split(':')[0]) === hour
-      );
+    const subjectId = active.id as string;
+    const [dayStr, hourStr] = (over.id as string).split('-');
+    const day = parseInt(dayStr);
+    const hour = parseInt(hourStr);
+    
+    const startTime = `${hour.toString().padStart(2, '0')}:00`;
+    const endTime = `${(hour + 1).toString().padStart(2, '0')}:00`;
 
-      if (!existing) {
-        addTimetableEntry({
-          subject_id: subjectId,
-          day_of_week: day,
-          start_time: startTime,
-          end_time: endTime,
-        });
-      }
+    // Check if slot is already taken
+    const existing = timetable.find(t => 
+      t.day_of_week === day && 
+      parseInt(t.start_time.split(':')[0]) === hour
+    );
+
+    if (existing) {
+      console.log('Slot already taken, updating instead?');
+      // For now, let's not update automatically on drag
+      return;
     }
-  };
 
-  const exportPDF = async () => {
-    setIsExporting(true);
-    const element = document.getElementById('timetable-grid');
-    if (element) {
-      const canvas = await html2canvas(element, { scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('l', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save('timetable.pdf');
-    }
-    setIsExporting(false);
+    addTimetableEntry({
+      subject_id: subjectId,
+      day_of_week: day,
+      start_time: startTime,
+      end_time: endTime,
+    });
   };
 
   return (
@@ -66,14 +52,6 @@ export function Timetable() {
             <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Timetable</h1>
             <p className="text-zinc-500 dark:text-zinc-400 mt-1">Drag subjects to schedule your week.</p>
           </div>
-          <button
-            onClick={exportPDF}
-            disabled={isExporting}
-            className="px-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white rounded-xl font-medium shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors flex items-center gap-2 disabled:opacity-50"
-          >
-            <Download className="w-4 h-4" />
-            {isExporting ? 'Exporting...' : 'Export PDF'}
-          </button>
         </header>
 
         <div className="flex flex-col lg:flex-row gap-8">

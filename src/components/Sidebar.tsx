@@ -9,6 +9,7 @@ const navItems = [
   { icon: CheckSquare, label: 'Tasks', path: '/tasks' },
   { icon: BookOpen, label: 'Subjects', path: '/subjects' },
   { icon: Calendar, label: 'Timetable', path: '/timetable' },
+  { icon: FileText, label: 'Notes', path: '/notes' },
   { icon: BarChart2, label: 'Analytics', path: '/analytics' },
   { icon: Bot, label: 'Study Assistant', path: '/assistant' },
 ];

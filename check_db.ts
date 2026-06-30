@@ -6,11 +6,15 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 async function check() {
-  const { data, error } = await supabase.from('subjects').select('*').limit(1);
-  console.log('Subjects Error:', error);
+  const { data: sData, error: sError } = await supabase.from('subjects').select('*');
+  console.log('Subjects Data:', sData);
   
   const { data: tData, error: tError } = await supabase.from('tasks').select('*').limit(1);
   console.log('Tasks Error:', tError);
+
+  const { data: ttData, error: ttError } = await supabase.from('timetable').select('*');
+  console.log('Timetable Error:', ttError);
+  console.log('Timetable Data:', ttData);
 }
 
 check();
