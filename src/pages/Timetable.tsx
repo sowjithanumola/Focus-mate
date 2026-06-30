@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { DndContext, useDraggable, useDroppable, DragEndEvent } from '@dnd-kit/core';
-import { Trash2, Calendar as CalendarIcon, Plus } from 'lucide-react';
+import { Trash2, Calendar as CalendarIcon, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 8); // 8 AM to 9 PM
+const HOURS = Array.from({ length: 18 }, (_, i) => i + 5); // 5 AM to 10 PM (5:00 to 22:00)
 
 export function Timetable() {
   const { subjects, timetable, addTimetableEntry, deleteTimetableEntry, updateTimetableEntry } = useStore();
   const [activeEntry, setActiveEntry] = useState<{ day: number, hour: number, entry?: any } | null>(null);
+  const [view, setView] = useState<'day' | 'week'>('week');
+  const [currentDayIndex, setCurrentDayIndex] = useState(0); // For Day view
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -30,11 +32,7 @@ export function Timetable() {
       parseInt(t.start_time.split(':')[0]) === hour
     );
 
-    if (existing) {
-      console.log('Slot already taken, updating instead?');
-      // For now, let's not update automatically on drag
-      return;
-    }
+    if (existing) return;
 
     addTimetableEntry({
       subject_id: subjectId,
@@ -44,15 +42,39 @@ export function Timetable() {
     });
   };
 
+  const visibleDays = view === 'week' ? DAYS : [DAYS[currentDayIndex]];
+
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6">
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">Timetable</h1>
-            <p className="text-zinc-500 dark:text-zinc-400 mt-1">Drag subjects to schedule your week.</p>
+            <p className="text-zinc-500 dark:text-zinc-400 mt-1">Manage your weekly study sessions.</p>
+          </div>
+          <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-xl">
+            <button
+              onClick={() => setView('day')}
+              className={cn("px-4 py-2 rounded-lg text-sm font-medium transition-colors", view === 'day' ? "bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-600 dark:text-zinc-400")}
+            >
+              Day
+            </button>
+            <button
+              onClick={() => setView('week')}
+              className={cn("px-4 py-2 rounded-lg text-sm font-medium transition-colors", view === 'week' ? "bg-white dark:bg-zinc-700 shadow-sm" : "text-zinc-600 dark:text-zinc-400")}
+            >
+              Week
+            </button>
           </div>
         </header>
+
+        {view === 'day' && (
+          <div className="flex items-center gap-4 mb-4">
+            <button onClick={() => setCurrentDayIndex(prev => (prev - 1 + 7) % 7)} className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronLeft className="w-5 h-5"/></button>
+            <span className="font-bold text-lg">{DAYS[currentDayIndex]}</span>
+            <button onClick={() => setCurrentDayIndex(prev => (prev + 1) % 7)} className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800"><ChevronRight className="w-5 h-5"/></button>
+          </div>
+        )}
 
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="w-full lg:w-64 shrink-0 space-y-4">
@@ -62,26 +84,16 @@ export function Timetable() {
                 Subjects
               </h3>
               <div className="space-y-3">
-                {subjects.length === 0 ? (
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400 text-center py-4">
-                    Add subjects first to create your timetable.
-                  </p>
-                ) : (
-                  subjects.map(subject => (
-                    <DraggableSubject key={subject.id} subject={subject} />
-                  ))
-                )}
+                {subjects.map(subject => <DraggableSubject key={subject.id} subject={subject} />)}
               </div>
             </div>
           </div>
 
           <div className="flex-1 overflow-x-auto pb-8">
-            <div id="timetable-grid" className="min-w-[800px] bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-              <div className="grid grid-cols-8 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50">
-                <div className="p-4 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400 border-r border-zinc-200 dark:border-zinc-800">
-                  Time
-                </div>
-                {DAYS.map((day, i) => (
+            <div className="min-w-[600px] bg-white dark:bg-zinc-900 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+              <div className={cn("grid border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50", view === 'week' ? "grid-cols-8" : "grid-cols-2")}>
+                <div className="p-4 text-center text-sm font-medium text-zinc-500 dark:text-zinc-400 border-r border-zinc-200 dark:border-zinc-800">Time</div>
+                {visibleDays.map((day) => (
                   <div key={day} className="p-4 text-center text-sm font-bold text-zinc-900 dark:text-white border-r border-zinc-200 dark:border-zinc-800 last:border-0">
                     {day}
                   </div>
@@ -90,29 +102,20 @@ export function Timetable() {
 
               <div className="divide-y divide-zinc-200 dark:divide-zinc-800">
                 {HOURS.map(hour => (
-                  <div key={hour} className="grid grid-cols-8">
+                  <div key={hour} className={cn("grid", view === 'week' ? "grid-cols-8" : "grid-cols-2")}>
                     <div className="p-3 text-center text-xs font-medium text-zinc-500 dark:text-zinc-400 border-r border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-center">
                       {hour.toString().padStart(2, '0')}:00
                     </div>
-                    {DAYS.map((_, dayIndex) => {
-                      // Adjust dayIndex because DAYS array starts with Monday (0), but JS getDay() has Sunday as 0.
-                      // Let's map Monday=1, Tuesday=2... Sunday=0 to match JS getDay()
+                    {visibleDays.map((day) => {
+                      const dayIndex = DAYS.indexOf(day);
                       const jsDay = dayIndex === 6 ? 0 : dayIndex + 1;
                       const slotId = `${jsDay}-${hour}`;
-                      
-                      const entry = timetable.find(t => 
-                        t.day_of_week === jsDay && 
-                        parseInt(t.start_time.split(':')[0]) === hour
-                      );
-                      
+                      const entry = timetable.find(t => t.day_of_week === jsDay && parseInt(t.start_time.split(':')[0]) === hour);
                       const subject = entry ? subjects.find(s => s.id === entry.subject_id) : null;
 
                       return (
                         <DroppableSlot 
-                          key={slotId} 
-                          id={slotId} 
-                          entry={entry} 
-                          subject={subject}
+                          key={slotId} id={slotId} entry={entry} subject={subject}
                           onDelete={() => entry && deleteTimetableEntry(entry.id)}
                           onClick={() => setActiveEntry({ day: jsDay, hour, entry })}
                         />
@@ -125,7 +128,6 @@ export function Timetable() {
           </div>
         </div>
       </div>
-
       {activeEntry && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 max-w-sm w-full shadow-xl">
@@ -133,28 +135,26 @@ export function Timetable() {
               {activeEntry.entry ? 'Edit Entry' : 'Select Subject'}
             </h3>
             <div className="space-y-4">
-              {activeEntry.entry && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-medium text-zinc-500">Start Time</label>
-                    <input 
-                      type="time" 
-                      defaultValue={activeEntry.entry.start_time}
-                      onChange={(e) => setActiveEntry(prev => prev ? {...prev, entry: {...prev.entry, start_time: e.target.value}} : null)}
-                      className="w-full p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-zinc-500">End Time</label>
-                    <input 
-                      type="time" 
-                      defaultValue={activeEntry.entry.end_time}
-                      onChange={(e) => setActiveEntry(prev => prev ? {...prev, entry: {...prev.entry, end_time: e.target.value}} : null)}
-                      className="w-full p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm"
-                    />
-                  </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-medium text-zinc-500">Start Time</label>
+                  <input 
+                    type="time" 
+                    defaultValue={activeEntry.entry?.start_time || `${activeEntry.hour.toString().padStart(2, '0')}:00`}
+                    onChange={(e) => setActiveEntry(prev => prev ? {...prev, entry: {...prev.entry, start_time: e.target.value}} : null)}
+                    className="w-full p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm"
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="text-xs font-medium text-zinc-500">End Time</label>
+                  <input 
+                    type="time" 
+                    defaultValue={activeEntry.entry?.end_time || `${(activeEntry.hour + 1).toString().padStart(2, '0')}:00`}
+                    onChange={(e) => setActiveEntry(prev => prev ? {...prev, entry: {...prev.entry, end_time: e.target.value}} : null)}
+                    className="w-full p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm"
+                  />
+                </div>
+              </div>
               <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {subjects.length === 0 ? (
                   <p className="text-sm text-zinc-500">No subjects available. Add them in the Subjects tab.</p>
@@ -191,13 +191,11 @@ export function Timetable() {
                       end_time: activeEntry.entry.end_time,
                     });
                   } else {
-                    const startTime = `${activeEntry.hour.toString().padStart(2, '0')}:00`;
-                    const endTime = `${(activeEntry.hour + 1).toString().padStart(2, '0')}:00`;
                     addTimetableEntry({
                       subject_id: activeEntry.entry?.subject_id || subjects[0]?.id,
                       day_of_week: activeEntry.day,
-                      start_time: startTime,
-                      end_time: endTime,
+                      start_time: activeEntry.entry?.start_time || `${activeEntry.hour.toString().padStart(2, '0')}:00`,
+                      end_time: activeEntry.entry?.end_time || `${(activeEntry.hour + 1).toString().padStart(2, '0')}:00`,
                     });
                   }
                   setActiveEntry(null);
@@ -214,6 +212,9 @@ export function Timetable() {
   );
 }
 
+// ... (rest of the file as viewed above)
+
+// Components DraggableSubject and DroppableSlot
 function DraggableSubject({ subject }: { subject: any }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: subject.id,
@@ -276,3 +277,4 @@ function DroppableSlot({ id, entry, subject, onDelete, onClick }: { id: string, 
     </div>
   );
 }
+
