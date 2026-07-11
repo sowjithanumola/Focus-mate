@@ -16,9 +16,8 @@ export function Timetable() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (!over || active.data.current?.type !== 'subject') return;
+    if (!over) return;
 
-    const subjectId = active.id as string;
     const [dayStr, hourStr] = (over.id as string).split('-');
     const day = parseInt(dayStr);
     const hour = parseInt(hourStr);
@@ -32,14 +31,24 @@ export function Timetable() {
       parseInt(t.start_time.split(':')[0]) === hour
     );
 
-    if (existing) return;
-
-    addTimetableEntry({
-      subject_id: subjectId,
-      day_of_week: day,
-      start_time: startTime,
-      end_time: endTime,
-    });
+    if (active.data.current?.type === 'subject') {
+      if (existing) return;
+      const subjectId = active.id as string;
+      addTimetableEntry({
+        subject_id: subjectId,
+        day_of_week: day,
+        start_time: startTime,
+        end_time: endTime,
+      });
+    } else if (active.data.current?.type === 'entry') {
+      if (existing && existing.id !== active.id) return; // Cannot move to an occupied slot
+      
+      updateTimetableEntry(active.id as string, {
+        day_of_week: day,
+        start_time: startTime,
+        end_time: endTime,
+      });
+    }
   };
 
   const visibleDays = view === 'week' ? DAYS : [DAYS[currentDayIndex]];
@@ -261,19 +270,41 @@ function DroppableSlot({ id, entry, subject, onDelete, onClick }: { id: string, 
         </div>
       )}
       {entry && subject && (
-        <div 
-          className="w-full h-full rounded-lg p-2 text-xs font-bold text-white relative overflow-hidden flex flex-col justify-center"
-          style={{ backgroundColor: subject.color }}
-        >
-          <span className="truncate block">{subject.name}</span>
-          <button
-            onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            className="absolute top-1 right-1 p-1 bg-black/20 hover:bg-black/40 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
-        </div>
+        <DraggableEntry entry={entry} subject={subject} onDelete={onDelete} />
       )}
+    </div>
+  );
+}
+
+function DraggableEntry({ entry, subject, onDelete }: { entry: any, subject: any, onDelete: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: entry.id,
+    data: { type: 'entry', entry }
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    zIndex: 50,
+  } : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        "w-full h-full rounded-lg p-2 text-xs font-bold text-white relative overflow-hidden flex flex-col justify-center cursor-grab active:cursor-grabbing",
+        isDragging ? "shadow-xl opacity-50" : "shadow-sm hover:shadow-md"
+      )}
+      style={{ ...style, backgroundColor: subject.color }}
+    >
+      <span className="truncate block">{subject.name}</span>
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+        className="absolute top-1 right-1 p-1 bg-black/20 hover:bg-black/40 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
     </div>
   );
 }

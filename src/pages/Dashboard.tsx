@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useStore } from '../store/useStore';
-import { format } from 'date-fns';
 import { CheckCircle2, Circle, Flame, Target, Clock, BookOpen, CheckSquare } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Link } from 'react-router-dom';
@@ -10,7 +9,7 @@ export function Dashboard() {
   const { tasks, sessions, streak, dailyGoalMinutes, subjects, timetable, updateTask } = useStore();
 
   const today = new Date();
-  const todayStr = format(today, 'yyyy-MM-dd');
+  const todayStr = today.toISOString().split('T')[0];
   
   const currentHour = today.getHours();
   const greeting = currentHour < 12 ? 'Good Morning!' : currentHour < 18 ? 'Good Afternoon!' : 'Good Evening!';
@@ -34,7 +33,7 @@ export function Dashboard() {
       <header className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">{greeting}</h1>
-          <p className="text-zinc-500 dark:text-zinc-400 mt-1">Here's your study overview for {format(today, 'EEEE, MMMM d')}</p>
+          <p className="text-zinc-500 dark:text-zinc-400 mt-1">Here's your study overview for {today.toDateString()}</p>
         </div>
       </header>
 

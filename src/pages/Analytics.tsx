@@ -1,17 +1,17 @@
 import { useStore } from '../store/useStore';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { format, subDays, startOfWeek, endOfWeek, eachDayOfInterval } from 'date-fns';
+import { format, subDays, isSameDay, parseISO } from 'date-fns';
 import { BarChart2, TrendingUp, Clock, BookOpen } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export function Analytics() {
   const { sessions, subjects } = useStore();
+  console.log('Analytics -> sessions:', sessions);
 
   // Calculate Last 7 Days Data
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(new Date(), 6 - i);
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const daySessions = sessions.filter(s => s.created_at.startsWith(dateStr));
+    const daySessions = sessions.filter(s => isSameDay(parseISO(s.created_at), date));
     const minutes = daySessions.reduce((acc, s) => acc + s.duration_minutes, 0);
     return {
       name: format(date, 'EEE'),
