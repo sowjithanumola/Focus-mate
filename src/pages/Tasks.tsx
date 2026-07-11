@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../lib/utils';
 
 export function Tasks() {
-  const { tasks, subjects, addTask, updateTask, deleteTask, searchTerm } = useStore();
+  const { tasks, subjects, addTask, updateTask, deleteTask } = useStore();
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -27,10 +27,7 @@ export function Tasks() {
     setDueDate('');
   };
 
-  const filteredTasks = tasks.filter(t => 
-    t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (t.description && t.description.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredTasks = tasks;
 
   const pendingTasks = filteredTasks.filter(t => !t.is_completed);
   const completedTasks = filteredTasks.filter(t => t.is_completed);

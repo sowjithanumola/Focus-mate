@@ -10,8 +10,43 @@ import { Subjects } from './pages/Subjects';
 import { Timetable } from './pages/Timetable';
 import { Notes } from './pages/Notes';
 import { Analytics } from './pages/Analytics';
-import { Assistant } from './pages/Assistant';
+import { Notifications } from './pages/Notifications';
+import { ZozoPage } from './pages/Zozo';
+import { GidduPage } from './pages/Giddu';
+import { MentorAIPage } from './pages/MentorAI';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
+
+function NotificationChecker() {
+  const { tasks } = useStore();
+
+  useEffect(() => {
+    const checkTasks = () => {
+      const now = new Date();
+      tasks.forEach(task => {
+        if (!task.due_date || task.is_completed) return;
+        
+        const dueDate = new Date(task.due_date);
+        const timeDiff = dueDate.getTime() - now.getTime();
+        
+        // Remind 15 minutes before
+        if (timeDiff > 0 && timeDiff < 15 * 60 * 1000) {
+          if (Notification.permission === 'granted') {
+            new Notification(`Task Due Soon: ${task.title}`, {
+              body: `Due at ${dueDate.toLocaleTimeString()}`,
+            });
+          } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission();
+          }
+        }
+      });
+    };
+
+    const interval = setInterval(checkTasks, 60000);
+    return () => clearInterval(interval);
+  }, [tasks]);
+
+  return null;
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useStore();
@@ -50,6 +85,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <NotificationChecker />
       <Routes>
         <Route path="/login" element={<Auth />} />
         
@@ -65,7 +101,10 @@ export default function App() {
           <Route path="timetable" element={<Timetable />} />
           <Route path="notes" element={<Notes />} />
           <Route path="analytics" element={<Analytics />} />
-          <Route path="assistant" element={<Assistant />} />
+          <Route path="zozo" element={<ZozoPage />} />
+          <Route path="giddu" element={<GidduPage />} />
+          <Route path="ai" element={<MentorAIPage />} />
+          <Route path="notifications" element={<Notifications />} />
         </Route>
       </Routes>
     </BrowserRouter>

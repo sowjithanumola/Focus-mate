@@ -1,9 +1,11 @@
-import { Search, Sun, Moon, Menu } from 'lucide-react';
+import { Sun, Moon, Menu, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
+import { Link } from 'react-router-dom';
 
 export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
-  const { searchTerm, setSearchTerm } = useStore();
+  const { notifications } = useStore();
+  const unreadCount = notifications.filter(n => !n.read).length;
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('focusmate_theme');
@@ -32,19 +34,17 @@ export function TopBar({ onMenuClick }: { onMenuClick: () => void }) {
         >
           <Menu className="w-5 h-5" />
         </button>
-        <div className="relative max-w-md w-full hidden sm:block">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
-          <input 
-            type="text" 
-            placeholder="Search tasks, subjects..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-zinc-100 dark:bg-zinc-800 border-transparent focus:bg-white dark:focus:bg-zinc-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 rounded-xl text-sm transition-all outline-none text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-500"
-          />
-        </div>
       </div>
 
       <div className="flex items-center gap-3">
+        <Link to="/notifications" className="p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors relative">
+          <Bell className="w-5 h-5" />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
+        </Link>
         <button 
           onClick={() => setIsDark(!isDark)}
           className="p-2 text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors"

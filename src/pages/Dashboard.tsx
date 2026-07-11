@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 export function Dashboard() {
-  const { tasks, sessions, streak, dailyGoalMinutes, subjects, timetable, updateTask } = useStore();
+  const { tasks, sessions, streak, dailyGoalMinutes, subjects, timetable, updateTask, user } = useStore();
 
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
@@ -32,7 +32,7 @@ export function Dashboard() {
     <div className="space-y-8">
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">{greeting}</h1>
+          <h1 className="text-3xl font-bold text-zinc-900 dark:text-white">{greeting} {user?.user_metadata?.full_name || user?.email?.split('@')[0] || ''}</h1>
           <p className="text-zinc-500 dark:text-zinc-400 mt-1">Here's your study overview for {today.toDateString()}</p>
         </div>
       </header>

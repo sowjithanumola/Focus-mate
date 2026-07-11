@@ -38,16 +38,25 @@ export type StudySession = {
   created_at: string;
 };
 
+export type Notification = {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  read: boolean;
+  created_at: string;
+};
+
 type State = {
   user: any | null;
   tasks: Task[];
   subjects: Subject[];
   timetable: TimetableEntry[];
   sessions: StudySession[];
+  notifications: Notification[];
   isLoading: boolean;
   streak: number;
   dailyGoalMinutes: number;
-  searchTerm: string;
   
   fetchData: () => Promise<void>;
   addTask: (task: Partial<Task>) => Promise<void>;
@@ -62,7 +71,8 @@ type State = {
   deleteTimetableEntry: (id: string) => Promise<void>;
   
   addStudySession: (session: Partial<StudySession>) => Promise<void>;
-  setSearchTerm: (term: string) => void;
+  addNotification: (notification: Partial<Notification>) => Promise<void>;
+  markNotificationRead: (id: string) => Promise<void>;
 };
 
 const saveLocalData = (state: Partial<State>) => {
@@ -105,10 +115,10 @@ export const useStore = create<State>((set, get) => ({
   subjects: [],
   timetable: [],
   sessions: [],
+  notifications: [],
   isLoading: false,
   streak: 0,
   dailyGoalMinutes: 120, // 2 hours default
-  searchTerm: '',
 
   fetchData: async () => {
     if (!isSupabaseConfigured || !supabase) {
@@ -158,6 +168,16 @@ export const useStore = create<State>((set, get) => ({
       fetchTable('timetable', 'start_time', true),
       fetchTable('study_sessions', 'created_at', false)
     ]);
+    
+    let notifications = [];
+    try {
+      if (supabase) {
+        const { data } = await supabase.from('notifications').select('*').order('created_at', { ascending: false });
+        notifications = data || [];
+      }
+    } catch (e) {
+      console.warn('Notifications table might not exist');
+    }
 
     const currentStreak = calculateStreak(sessions || []);
 
@@ -167,6 +187,7 @@ export const useStore = create<State>((set, get) => ({
       subjects: subjects || [],
       timetable: timetable || [],
       sessions: sessions || [],
+      notifications: notifications || [],
       streak: currentStreak,
       isLoading: false
     });
@@ -401,5 +422,50 @@ export const useStore = create<State>((set, get) => ({
     }
   },
 
-  setSearchTerm: (term) => set({ searchTerm: term })
+  addNotification: async (notification) => {
+    if (!supabase) {
+      const newNotification = { ...notification, id: Date.now().toString(), read: false, created_at: new Date().toISOString() } as Notification;
+      set(state => {
+        const newState = { notifications: [newNotification, ...state.notifications] };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .insert([{ ...notification, user_id: user.id, read: false }])
+      .select()
+      .single();
+
+    if (!error && data) {
+      set(state => ({ notifications: [data, ...state.notifications] }));
+    }
+  },
+
+  markNotificationRead: async (id) => {
+    if (!supabase) {
+      set(state => {
+        const newState = {
+          notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n)
+        };
+        saveLocalData(newState);
+        return newState;
+      });
+      return;
+    }
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', id);
+
+    if (!error) {
+      set(state => ({
+        notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n)
+      }));
+    }
+  }
 }));

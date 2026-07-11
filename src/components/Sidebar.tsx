@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Timer, CheckSquare, Calendar, BarChart2, BookOpen, LogOut, Bot, FileText } from 'lucide-react';
+import { LayoutDashboard, Timer, CheckSquare, Calendar, BarChart2, BookOpen, LogOut, Bot, FileText, Target } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { supabase } from '../lib/supabase';
 
@@ -11,7 +11,9 @@ const navItems = [
   { icon: Calendar, label: 'Timetable', path: '/timetable' },
   { icon: FileText, label: 'Notes', path: '/notes' },
   { icon: BarChart2, label: 'Analytics', path: '/analytics' },
-  { icon: Bot, label: 'Study Assistant', path: '/assistant' },
+  { icon: Target, label: 'Zozo', path: '/zozo' },
+  { icon: Bot, label: 'Giddu', path: '/giddu' },
+  { icon: Bot, label: 'AI', path: '/ai' },
 ];
 
 export function Sidebar({ onClose }: { onClose?: () => void }) {
