@@ -122,8 +122,6 @@ export const useStore = create<State>((set, get) => ({
   dailyGoalMinutes: 120, // 2 hours default
 
   fetchData: async () => {
-    if (get().isLoading) return; // Already fetching
-
     if (!isSupabaseConfigured || !supabase) {
       // Load from local storage for demo mode
       const localData = localStorage.getItem('focusmate_data');
@@ -139,33 +137,38 @@ export const useStore = create<State>((set, get) => ({
     
     set({ isLoading: true });
     
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     
+    console.log('fetchData -> session:', session);
+    console.log('fetchData -> user:', user, 'error:', userError);
+
     if (!user) {
       set({ user: null, isLoading: false });
       return;
     }
-    
-    set({ user });
 
     const fetchTable = async (table: string, orderColumn: string, ascending: boolean = true) => {
       if (!supabase) return [];
-      console.log(`Fetching table: ${table}`);
-      try {
-        const { data, error } = await supabase.from(table).select('*').order(orderColumn, { ascending });
-        if (error) throw error;
-        return data || [];
-      } catch (error) {
+      const { data, error } = await supabase.from(table).select('*').order(orderColumn, { ascending });
+      if (error) {
         console.error(`Error fetching ${table}:`, error);
         return [];
       }
+      return data;
     };
-    
-    // Fetch tables sequentially to avoid lock issues
-    const tasks = await fetchTable('tasks', 'created_at', false);
-    const subjects = await fetchTable('subjects', 'name', true);
-    const timetable = await fetchTable('timetable', 'start_time', true);
-    const sessions = await fetchTable('study_sessions', 'created_at', false);
+
+    const [
+      tasks,
+      subjects,
+      timetable,
+      sessions
+    ] = await Promise.all([
+      fetchTable('tasks', 'created_at', false),
+      fetchTable('subjects', 'name', true),
+      fetchTable('timetable', 'start_time', true),
+      fetchTable('study_sessions', 'created_at', false)
+    ]);
     
     let notifications = [];
     try {
@@ -178,13 +181,14 @@ export const useStore = create<State>((set, get) => ({
     }
 
     const currentStreak = calculateStreak(sessions || []);
-    
+
     set({
-      tasks,
-      subjects,
-      timetable,
-      sessions,
-      notifications,
+      user,
+      tasks: tasks || [],
+      subjects: subjects || [],
+      timetable: timetable || [],
+      sessions: sessions || [],
+      notifications: notifications || [],
       streak: currentStreak,
       isLoading: false
     });
