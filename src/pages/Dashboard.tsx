@@ -6,12 +6,13 @@ import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 export function Dashboard() {
-  const { tasks, sessions, streak, dailyGoalMinutes, subjects, timetable, updateTask, user, checkDueTasks } = useStore();
+  const { tasks, sessions, streak, dailyGoalMinutes, subjects, timetable, updateTask, user, checkDueTasks, fetchData } = useStore();
   
   useEffect(() => {
-    console.log('Dashboard mounted. Tasks:', tasks.length, 'Timetable:', timetable.length);
+    // Ensure data is loaded
+    fetchData();
     checkDueTasks();
-  }, [tasks, timetable, checkDueTasks]);
+  }, [fetchData, checkDueTasks]);
 
   const today = new Date();
   const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
@@ -19,18 +20,19 @@ export function Dashboard() {
   const currentHour = today.getHours();
   const greeting = currentHour < 12 ? 'Good Morning!' : currentHour < 18 ? 'Good Afternoon!' : 'Good Evening!';
   
-  const todayTasks = tasks.filter(t => {
-    if (!t.due_date) return false;
+  // Defensive filter
+  const todayTasks = (tasks || []).filter(t => {
+    if (!t || !t.due_date) return false;
     return t.due_date.startsWith(todayStr);
   });
 
-  const todaySessions = sessions.filter(s => s.created_at.startsWith(todayStr));
-  const todayMinutes = todaySessions.reduce((acc, s) => acc + s.duration_minutes, 0);
-  const progressPercent = Math.min(100, Math.round((todayMinutes / dailyGoalMinutes) * 100));
+  const todaySessions = (sessions || []).filter(s => s && s.created_at.startsWith(todayStr));
+  const todayMinutes = todaySessions.reduce((acc, s) => acc + (s?.duration_minutes || 0), 0);
+  const progressPercent = Math.min(100, Math.round((todayMinutes / (dailyGoalMinutes || 1)) * 100));
 
   const dayOfWeek = today.getDay();
-  const todayClasses = timetable
-    .filter(t => t.day_of_week === dayOfWeek)
+  const todayClasses = (timetable || [])
+    .filter(t => t && t.day_of_week === dayOfWeek)
     .sort((a, b) => a.start_time.localeCompare(b.start_time));
 
   return (

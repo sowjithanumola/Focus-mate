@@ -137,27 +137,28 @@ export const useStore = create<State>((set, get) => ({
     
     set({ isLoading: true });
     
-    const { data: { session } } = await supabase.auth.getSession();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     
-    console.log('fetchData -> session:', session);
-    console.log('fetchData -> user:', user, 'error:', userError);
-
     if (!user) {
       set({ user: null, isLoading: false });
       return;
     }
+    
+    set({ user });
 
     const fetchTable = async (table: string, orderColumn: string, ascending: boolean = true) => {
       if (!supabase) return [];
-      const { data, error } = await supabase.from(table).select('*').order(orderColumn, { ascending });
-      if (error) {
+      console.log(`Fetching table: ${table}`);
+      try {
+        const { data, error } = await supabase.from(table).select('*').order(orderColumn, { ascending });
+        if (error) throw error;
+        return data || [];
+      } catch (error) {
         console.error(`Error fetching ${table}:`, error);
         return [];
       }
-      return data;
     };
-
+    
     const [
       tasks,
       subjects,
@@ -181,14 +182,13 @@ export const useStore = create<State>((set, get) => ({
     }
 
     const currentStreak = calculateStreak(sessions || []);
-
+    
     set({
-      user,
-      tasks: tasks || [],
-      subjects: subjects || [],
-      timetable: timetable || [],
-      sessions: sessions || [],
-      notifications: notifications || [],
+      tasks,
+      subjects,
+      timetable,
+      sessions,
+      notifications,
       streak: currentStreak,
       isLoading: false
     });
@@ -219,7 +219,6 @@ export const useStore = create<State>((set, get) => ({
 
     if (!error && data) {
       set(state => ({ tasks: [data, ...state.tasks] }));
-      get().fetchData(); // Sync with database
     }
   },
 
@@ -349,7 +348,6 @@ export const useStore = create<State>((set, get) => ({
 
     if (!error && data) {
       set(state => ({ timetable: [...state.timetable, data] }));
-      get().fetchData(); // Sync with database
     }
   },
 
@@ -435,7 +433,7 @@ export const useStore = create<State>((set, get) => ({
       });
       return;
     }
-    const { data: { user } } = await supabase.auth.getUser();
+    const { user } = get();
     if (!user) return;
 
     const { data, error } = await supabase

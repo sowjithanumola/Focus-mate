@@ -17,10 +17,12 @@ import { MentorAIPage } from './pages/MentorAI';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 
 function NotificationChecker() {
-  const { tasks } = useStore();
+  const { tasks, checkDueTasks } = useStore();
 
   useEffect(() => {
+    checkDueTasks(); // Check once on mount
     const checkTasks = () => {
+      // Existing browser notification logic
       const now = new Date();
       tasks.forEach(task => {
         if (!task.due_date || task.is_completed) return;
@@ -39,11 +41,13 @@ function NotificationChecker() {
           }
         }
       });
+      // Existing internal notification logic
+      checkDueTasks();
     };
 
     const interval = setInterval(checkTasks, 60000);
     return () => clearInterval(interval);
-  }, [tasks]);
+  }, [tasks, checkDueTasks]);
 
   return null;
 }
