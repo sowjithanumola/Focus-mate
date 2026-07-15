@@ -6,7 +6,11 @@ import { Link } from 'react-router-dom';
 import { cn } from '../lib/utils';
 
 export function Dashboard() {
-  const { tasks, sessions, streak, dailyGoalMinutes, subjects, timetable, updateTask, user } = useStore();
+  const { tasks, sessions, streak, dailyGoalMinutes, subjects, timetable, updateTask, user, checkDueTasks } = useStore();
+
+  useEffect(() => {
+    checkDueTasks();
+  }, [tasks, checkDueTasks]);
 
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];

@@ -73,6 +73,7 @@ type State = {
   addStudySession: (session: Partial<StudySession>) => Promise<void>;
   addNotification: (notification: Partial<Notification>) => Promise<void>;
   markNotificationRead: (id: string) => Promise<void>;
+  checkDueTasks: () => Promise<void>;
 };
 
 const saveLocalData = (state: Partial<State>) => {
@@ -466,6 +467,27 @@ export const useStore = create<State>((set, get) => ({
       set(state => ({
         notifications: state.notifications.map(n => n.id === id ? { ...n, read: true } : n)
       }));
+    }
+  },
+
+  checkDueTasks: async () => {
+    const { tasks, notifications, addNotification } = get();
+    const today = new Date().toISOString().split('T')[0];
+
+    for (const task of tasks) {
+      if (task.due_date && task.due_date.startsWith(today) && !task.is_completed) {
+        const exists = notifications.some(n =>
+          n.title === 'Task Due' &&
+          n.message.includes(task.title) &&
+          n.created_at.startsWith(today)
+        );
+        if (!exists) {
+          await addNotification({
+            title: 'Task Due',
+            message: `Task "${task.title}" is due today!`,
+          });
+        }
+      }
     }
   }
 }));
