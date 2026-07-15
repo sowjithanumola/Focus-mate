@@ -13,7 +13,7 @@ export function Dashboard() {
   }, [tasks, checkDueTasks]);
 
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
   
   const currentHour = today.getHours();
   const greeting = currentHour < 12 ? 'Good Morning!' : currentHour < 18 ? 'Good Afternoon!' : 'Good Evening!';
