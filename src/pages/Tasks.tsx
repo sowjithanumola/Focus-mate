@@ -15,6 +15,7 @@ export function Tasks() {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
 
+    console.log('Adding task:', newTaskTitle);
     addTask({
       title: newTaskTitle,
       subject_id: selectedSubject || undefined,

@@ -7,10 +7,11 @@ import { cn } from '../lib/utils';
 
 export function Dashboard() {
   const { tasks, sessions, streak, dailyGoalMinutes, subjects, timetable, updateTask, user, checkDueTasks } = useStore();
-
+  
   useEffect(() => {
+    console.log('Dashboard mounted. Tasks:', tasks.length, 'Timetable:', timetable.length);
     checkDueTasks();
-  }, [tasks, checkDueTasks]);
+  }, [tasks, timetable, checkDueTasks]);
 
   const today = new Date();
   const todayStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');

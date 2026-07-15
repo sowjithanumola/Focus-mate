@@ -219,6 +219,7 @@ export const useStore = create<State>((set, get) => ({
 
     if (!error && data) {
       set(state => ({ tasks: [data, ...state.tasks] }));
+      get().fetchData(); // Sync with database
     }
   },
 
@@ -348,6 +349,7 @@ export const useStore = create<State>((set, get) => ({
 
     if (!error && data) {
       set(state => ({ timetable: [...state.timetable, data] }));
+      get().fetchData(); // Sync with database
     }
   },
 
