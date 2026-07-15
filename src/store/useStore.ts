@@ -472,20 +472,44 @@ export const useStore = create<State>((set, get) => ({
 
   checkDueTasks: async () => {
     const { tasks, notifications, addNotification } = get();
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
     for (const task of tasks) {
-      if (task.due_date && task.due_date.startsWith(today) && !task.is_completed) {
-        const exists = notifications.some(n =>
-          n.title === 'Task Due' &&
-          n.message.includes(task.title) &&
-          n.created_at.startsWith(today)
-        );
-        if (!exists) {
-          await addNotification({
-            title: 'Task Due',
-            message: `Task "${task.title}" is due today!`,
-          });
+      if (task.due_date && !task.is_completed) {
+        // Check for today
+        if (task.due_date.startsWith(todayStr)) {
+          const exists = notifications.some(n =>
+            n.title === 'Task Due' &&
+            n.message.includes(task.title) &&
+            n.message.includes('today') &&
+            n.created_at.startsWith(todayStr)
+          );
+          if (!exists) {
+            await addNotification({
+              title: 'Task Due',
+              message: `Task "${task.title}" is due today!`,
+            });
+          }
+        }
+        // Check for tomorrow
+        else if (task.due_date.startsWith(tomorrowStr)) {
+          const exists = notifications.some(n =>
+            n.title === 'Task Due' &&
+            n.message.includes(task.title) &&
+            n.message.includes('tomorrow') &&
+            n.created_at.startsWith(todayStr)
+          );
+          if (!exists) {
+            await addNotification({
+              title: 'Task Due',
+              message: `Task "${task.title}" is due tomorrow!`,
+            });
+          }
         }
       }
     }
