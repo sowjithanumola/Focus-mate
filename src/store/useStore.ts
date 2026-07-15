@@ -122,6 +122,8 @@ export const useStore = create<State>((set, get) => ({
   dailyGoalMinutes: 120, // 2 hours default
 
   fetchData: async () => {
+    if (get().isLoading) return; // Already fetching
+
     if (!isSupabaseConfigured || !supabase) {
       // Load from local storage for demo mode
       const localData = localStorage.getItem('focusmate_data');
@@ -159,17 +161,11 @@ export const useStore = create<State>((set, get) => ({
       }
     };
     
-    const [
-      tasks,
-      subjects,
-      timetable,
-      sessions
-    ] = await Promise.all([
-      fetchTable('tasks', 'created_at', false),
-      fetchTable('subjects', 'name', true),
-      fetchTable('timetable', 'start_time', true),
-      fetchTable('study_sessions', 'created_at', false)
-    ]);
+    // Fetch tables sequentially to avoid lock issues
+    const tasks = await fetchTable('tasks', 'created_at', false);
+    const subjects = await fetchTable('subjects', 'name', true);
+    const timetable = await fetchTable('timetable', 'start_time', true);
+    const sessions = await fetchTable('study_sessions', 'created_at', false);
     
     let notifications = [];
     try {
